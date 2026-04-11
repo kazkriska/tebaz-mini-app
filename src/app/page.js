@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getVendorByTgId } from "@/models/vendors";
 
 export default function Home() {
+  const router = useRouter();
   const [user, setUser] = useState(null);
   const [vendor, setVendor] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -97,7 +99,10 @@ export default function Home() {
           </>
         ) : (
           // Non-Vendor View
-          <button className="w-full py-5 px-6 rounded-2xl bg-black dark:bg-zinc-50 text-white dark:text-black font-bold shadow-lg transition-all active:scale-95 text-center text-lg">
+          <button 
+            onClick={() => router.push("/create-shop")}
+            className="w-full py-5 px-6 rounded-2xl bg-black dark:bg-zinc-50 text-white dark:text-black font-bold shadow-lg transition-all active:scale-95 text-center text-lg"
+          >
             Create My Shop
           </button>
         )}
