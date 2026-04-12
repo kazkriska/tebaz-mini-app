@@ -10,6 +10,7 @@ import {
   updateProductPrice, 
   deleteProductPrice 
 } from "@/models/product-prices";
+import { getPublicImageUrl } from "@/lib/image-utils";
 
 export default function EditProductForm({ params }) {
   // We use React.use() to unwrap params in Next.js 15+ if needed, 
@@ -257,7 +258,7 @@ export default function EditProductForm({ params }) {
                 className="flex flex-col items-center justify-center w-full h-48 px-4 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-all overflow-hidden"
               >
                 {imagePreview || (pictureUrl && !pictureUrl.startsWith("placeholder")) ? (
-                  <img src={imagePreview || pictureUrl} alt="Product" className="w-full h-full object-cover" />
+                  <img src={imagePreview || getPublicImageUrl(pictureUrl)} alt="Product" className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-zinc-400 dark:text-zinc-500 text-sm">Tap to upload product image</span>
                 )}

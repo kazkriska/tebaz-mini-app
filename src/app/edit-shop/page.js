@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getVendorByTgId } from "@/models/vendors";
 import { getShopsByVendor, updateShop } from "@/models/shops";
+import { getPublicImageUrl } from "@/lib/image-utils";
 
 export default function EditShop() {
   const router = useRouter();
@@ -191,7 +192,7 @@ export default function EditShop() {
                 className="flex flex-col items-center justify-center w-full h-48 px-4 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-all overflow-hidden"
               >
                 {bannerPreview || (bannerUrl && !bannerUrl.startsWith("placeholder")) ? (
-                  <img src={bannerPreview || bannerUrl} alt="Banner" className="w-full h-full object-cover" />
+                  <img src={bannerPreview || getPublicImageUrl(bannerUrl)} alt="Banner" className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-zinc-400 dark:text-zinc-500 text-sm">Tap to upload banner</span>
                 )}
