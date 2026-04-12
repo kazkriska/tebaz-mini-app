@@ -15,8 +15,22 @@ export default function AddProduct() {
   const [categoryId, setCategoryId] = useState("");
   const [categories, setCategories] = useState([]);
   const [priceTiers, setPriceTiers] = useState([{ quantity: "", price: "" }]);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [shopId, setShopId] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
@@ -91,12 +105,31 @@ export default function AddProduct() {
     setError(null);
 
     try {
+      let picture_url = "placeholder_product_image";
+
+      if (imageFile) {
+        const uploadData = new FormData();
+        uploadData.append("file", imageFile);
+
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: uploadData,
+        });
+
+        if (!uploadRes.ok) {
+          throw new Error("Image upload failed");
+        }
+
+        const uploadResult = await uploadRes.json();
+        picture_url = uploadResult.imageUrl;
+      }
+
       const product = await createProduct({
         shop_id: shopId,
         category_id: parseInt(categoryId),
         name,
         description,
-        picture_url: "placeholder_product_image", // Placeholder as requested
+        picture_url,
       });
 
       // Save price tiers
@@ -278,13 +311,19 @@ export default function AddProduct() {
                 accept="image/*"
                 className="hidden"
                 id="product-image-upload"
-                onChange={() => {}} // Visual only for now
+                onChange={handleImageChange}
               />
               <label 
                 htmlFor="product-image-upload"
-                className="flex flex-col items-center justify-center w-full h-32 px-4 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-all"
+                className="flex flex-col items-center justify-center w-full h-48 px-4 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-all overflow-hidden"
               >
-                <span className="text-zinc-400 dark:text-zinc-500 text-sm">Tap to upload product image</span>
+                {imagePreview ? (
+                  <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-zinc-400 dark:text-zinc-500 text-sm text-center">
+                    Tap to upload product image
+                  </span>
+                )}
               </label>
             </div>
           </div>

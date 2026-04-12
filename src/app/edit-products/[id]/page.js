@@ -21,8 +21,23 @@ export default function EditProductForm({ params }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [pictureUrl, setPictureUrl] = useState("");
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [categories, setCategories] = useState([]);
   const [priceTiers, setPriceTiers] = useState([]);
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
   const [deletedPriceTierIds, setDeletedPriceTierIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -59,6 +74,7 @@ export default function EditProductForm({ params }) {
           setName(product.name);
           setDescription(product.description || "");
           setCategoryId(product.category_id);
+          setPictureUrl(product.picture_url || "");
         }
         setCategories(allCategories);
         setPriceTiers(prices.length > 0 ? prices : [{ quantity: "", price: "" }]);
@@ -79,10 +95,30 @@ export default function EditProductForm({ params }) {
     setError(null);
 
     try {
+      let finalPictureUrl = pictureUrl;
+
+      if (imageFile) {
+        const uploadData = new FormData();
+        uploadData.append("file", imageFile);
+
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: uploadData,
+        });
+
+        if (!uploadRes.ok) {
+          throw new Error("Image upload failed");
+        }
+
+        const uploadResult = await uploadRes.json();
+        finalPictureUrl = uploadResult.imageUrl;
+      }
+
       await updateProduct(productId, {
         name,
         description,
         category_id: parseInt(categoryId),
+        picture_url: finalPictureUrl,
       });
 
       // 1. Delete removed tiers
@@ -202,6 +238,31 @@ export default function EditProductForm({ params }) {
               onChange={(e) => setDescription(e.target.value)}
               className="w-full px-4 py-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-black dark:text-white focus:ring-2 focus:ring-black dark:focus:ring-white outline-none transition-all resize-none"
             />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 ml-1">
+              Product Image
+            </label>
+            <div className="relative">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                id="product-image-upload"
+                onChange={handleImageChange}
+              />
+              <label 
+                htmlFor="product-image-upload"
+                className="flex flex-col items-center justify-center w-full h-48 px-4 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-all overflow-hidden"
+              >
+                {imagePreview || (pictureUrl && !pictureUrl.startsWith("placeholder")) ? (
+                  <img src={imagePreview || pictureUrl} alt="Product" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-zinc-400 dark:text-zinc-500 text-sm">Tap to upload product image</span>
+                )}
+              </label>
+            </div>
           </div>
 
           <div className="space-y-3">

@@ -9,7 +9,22 @@ export default function EditShop() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [bannerUrl, setBannerUrl] = useState("");
+  const [bannerFile, setBannerFile] = useState(null);
+  const [bannerPreview, setBannerPreview] = useState(null);
   const [shopId, setShopId] = useState(null);
+
+  const handleBannerChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setBannerFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setBannerPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -33,6 +48,7 @@ export default function EditShop() {
               setShopId(shop.id);
               setName(shop.name);
               setDescription(shop.description || "");
+              setBannerUrl(shop.banner_url || "");
             } else {
               setError("Shop not found.");
             }
@@ -64,10 +80,29 @@ export default function EditShop() {
     setError(null);
 
     try {
+      let finalBannerUrl = bannerUrl;
+
+      if (bannerFile) {
+        const uploadData = new FormData();
+        uploadData.append("file", bannerFile);
+
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: uploadData,
+        });
+
+        if (!uploadRes.ok) {
+          throw new Error("Banner upload failed");
+        }
+
+        const uploadResult = await uploadRes.json();
+        finalBannerUrl = uploadResult.imageUrl;
+      }
+
       await updateShop(shopId, {
         name,
         description,
-        banner_url: "placeholder_banner_text", // Keep existing placeholder for now
+        banner_url: finalBannerUrl,
       });
       router.push("/");
     } catch (err) {
@@ -149,13 +184,17 @@ export default function EditShop() {
                 accept="image/*"
                 className="hidden"
                 id="banner-upload"
-                onChange={() => {}} // Visual only for now
+                onChange={handleBannerChange}
               />
               <label 
                 htmlFor="banner-upload"
-                className="flex flex-col items-center justify-center w-full h-32 px-4 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-all"
+                className="flex flex-col items-center justify-center w-full h-48 px-4 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-all overflow-hidden"
               >
-                <span className="text-zinc-400 dark:text-zinc-500 text-sm">Tap to upload new banner</span>
+                {bannerPreview || (bannerUrl && !bannerUrl.startsWith("placeholder")) ? (
+                  <img src={bannerPreview || bannerUrl} alt="Banner" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-zinc-400 dark:text-zinc-500 text-sm">Tap to upload banner</span>
+                )}
               </label>
             </div>
           </div>
