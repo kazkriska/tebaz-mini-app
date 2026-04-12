@@ -94,7 +94,10 @@ export default function Home() {
               Edit Existing Products
               <span className="text-zinc-400">✎</span>
             </button>
-            <button className="w-full py-4 px-6 rounded-2xl bg-white dark:bg-zinc-900 text-black dark:text-white font-semibold shadow-sm border border-zinc-200 dark:border-zinc-800 transition-all active:scale-95 text-left flex justify-between items-center">
+            <button 
+              onClick={() => router.push("/edit-shop")}
+              className="w-full py-4 px-6 rounded-2xl bg-white dark:bg-zinc-900 text-black dark:text-white font-semibold shadow-sm border border-zinc-200 dark:border-zinc-800 transition-all active:scale-95 text-left flex justify-between items-center"
+            >
               Edit Shop Info
               <span className="text-zinc-400">⚙</span>
             </button>
