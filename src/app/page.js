@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getVendorByTgId } from "@/models/vendors";
+import { getVendorByTgId, updateVendor } from "@/models/vendors";
+import { getCustomerByTgId, updateCustomer } from "@/models/customers";
 
 export default function Home() {
   const router = useRouter();
@@ -21,11 +22,53 @@ export default function Home() {
           const userData = tg.initDataUnsafe?.user;
 
           if (userData) {
+            // 1. Username Constraint
+            if (!userData.username) {
+              setError("Please set a Telegram username in your profile settings to access TeBaz. A username is required for security and identification.");
+              setLoading(false);
+              return;
+            }
+
             setUser(userData);
             
-            // Check if user is a vendor in our DB
+            // 2. Data Synchronization (Sync if exists in vendors or customers)
+            
+            // Check & Sync Vendor
             const vendorData = await getVendorByTgId(userData.id);
-            setVendor(vendorData);
+            if (vendorData) {
+              const needsUpdate = 
+                vendorData.username !== userData.username ||
+                vendorData.first_name !== userData.first_name ||
+                vendorData.last_name !== (userData.last_name || "");
+              
+              if (needsUpdate) {
+                const updatedVendor = await updateVendor(vendorData.id, {
+                  username: userData.username,
+                  first_name: userData.first_name,
+                  last_name: userData.last_name || "",
+                });
+                setVendor(updatedVendor);
+              } else {
+                setVendor(vendorData);
+              }
+            }
+
+            // Check & Sync Customer
+            const customerData = await getCustomerByTgId(userData.id);
+            if (customerData) {
+              const needsUpdate = 
+                customerData.username !== userData.username ||
+                customerData.first_name !== userData.first_name ||
+                customerData.last_name !== (userData.last_name || "");
+              
+              if (needsUpdate) {
+                await updateCustomer(customerData.id, {
+                  username: userData.username,
+                  first_name: userData.first_name,
+                  last_name: userData.last_name || "",
+                });
+              }
+            }
           } else {
             setError("User data not found. Are you opening this from Telegram?");
           }

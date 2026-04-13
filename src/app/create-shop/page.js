@@ -71,9 +71,14 @@ export default function CreateShop() {
         finalBannerUrl = uploadResult.imageUrl;
       }
 
+      // Check if username is present (should be enforced by landing page already, but good for safety)
+      if (!tgUser.username) {
+        throw new Error("Please set a Telegram username before creating a shop.");
+      }
+
       // 1. Create Vendor
       const vendor = await createVendor({
-        username: tgUser.username || `user_${tgUser.id}`,
+        username: tgUser.username,
         first_name: tgUser.first_name,
         last_name: tgUser.last_name || "",
         pin: "0000",
