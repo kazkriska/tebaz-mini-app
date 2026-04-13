@@ -4,14 +4,29 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createVendor } from "@/models/vendors";
 import { createShop } from "@/models/shops";
+import { getPublicImageUrl } from "@/lib/image-utils";
 
 export default function CreateShop() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [bannerFile, setBannerFile] = useState(null);
+  const [bannerPreview, setBannerPreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [tgUser, setTgUser] = useState(null);
+
+  const handleBannerChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setBannerFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setBannerPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.Telegram?.WebApp) {
@@ -37,6 +52,25 @@ export default function CreateShop() {
     setError(null);
 
     try {
+      let finalBannerUrl = "placeholder_banner_text";
+
+      if (bannerFile) {
+        const uploadData = new FormData();
+        uploadData.append("file", bannerFile);
+
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: uploadData,
+        });
+
+        if (!uploadRes.ok) {
+          throw new Error("Banner upload failed");
+        }
+
+        const uploadResult = await uploadRes.json();
+        finalBannerUrl = uploadResult.imageUrl;
+      }
+
       // 1. Create Vendor
       const vendor = await createVendor({
         username: tgUser.username || `user_${tgUser.id}`,
@@ -50,7 +84,7 @@ export default function CreateShop() {
       await createShop(vendor.id, {
         name,
         description,
-        banner_url: "placeholder_banner_text", // Placeholder as requested
+        banner_url: finalBannerUrl,
       });
 
       // 3. Navigate back to landing page
@@ -142,13 +176,17 @@ export default function CreateShop() {
                 accept="image/*"
                 className="hidden"
                 id="banner-upload"
-                onChange={() => {}} // Visual only for now
+                onChange={handleBannerChange}
               />
               <label 
                 htmlFor="banner-upload"
-                className="flex flex-col items-center justify-center w-full h-32 px-4 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-all"
+                className="flex flex-col items-center justify-center w-full h-48 px-4 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-all overflow-hidden"
               >
-                <span className="text-zinc-400 dark:text-zinc-500 text-sm">Tap to upload banner</span>
+                {bannerPreview ? (
+                  <img src={bannerPreview} alt="Banner Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-zinc-400 dark:text-zinc-500 text-sm">Tap to upload banner</span>
+                )}
               </label>
             </div>
           </div>
